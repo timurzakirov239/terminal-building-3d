@@ -181,13 +181,7 @@ body{font-family:'Inter',sans-serif;background:#0f0f1a;overflow:hidden;color:#e0
     <span class="ik">Открытое пространство</span><span class="iv">417.00 м²</span>
     <span class="ik">Рабочих мест</span><span class="iv">6 ПК</span>
     <span class="ik">Действующих ворот</span><span class="iv">3 (G2–G4)</span>
-    <span class="ik">Высота оболочки</span><span class="iv" id="hval">7.0 м</span>
-  </div>
-
-  <div class="sec">🏢 Высота здания</div>
-  <div class="brow">
-    <button class="vbtn on" data-h="7">7.0 м (Excel)</button>
-    <button class="vbtn" data-h="9">9.0 м (PDF)</button>
+    <span class="ik">Высота здания</span><span class="iv">9.0 м</span>
   </div>
 
   <span class="badge">⚠ Концепция · Не обмерный план</span>
@@ -293,8 +287,7 @@ const M = {
 /* ============================================================
    HELPERS
    ============================================================ */
-let H = 7;                    // current shell height
-const shellDeps = [];         // objects that scale with H
+const H = 9;                  // fixed shell height in metres
 
 // Create box in PROJECT coords: x0,y0 = plan; z0,z1 = height
 function B(x0,y0,z0, x1,y1,z1, mat, parent){
@@ -308,10 +301,9 @@ function B(x0,y0,z0, x1,y1,z1, mat, parent){
   return m;
 }
 
-// Box extending to shell height (tracked for height toggle)
+// Box extending to the fixed shell height
 function BH(x0,y0,z0, x1,y1, mat, parent){
   const m = B(x0,y0,z0, x1,y1,H, mat, parent);
-  if(m) shellDeps.push({mesh:m, z0, origH:H-z0});
   return m;
 }
 
@@ -477,7 +469,6 @@ B(0,0,3, 4,18,3.04, M.ceil, layers.ceiling);           // office ceiling
 B(15.39,22.02,3, 20.39,24.62,3.04, M.ceil, layers.ceiling); // WC ceiling
 
 const roofMesh = B(-.15,-.15,H, 20.54,24.77,H+.08, M.roof, layers.roof);
-shellDeps.push({mesh:roofMesh, z0:H, origH:.08, isRoof:true});
 
 /* ============================================================
    DOOR LEAVES (shown ~30° open)
@@ -590,7 +581,6 @@ for(const[cx,cy] of cols){
   const cm=new THREE.Mesh(cg,M.steel);
   cm.position.set(cx,H/2,-cy); cm.castShadow=true;
   scene.add(cm);
-  shellDeps.push({mesh:cm, z0:0, origH:H, isCol:true});
 }
 
 /* ============================================================
@@ -683,31 +673,6 @@ document.querySelectorAll('.tsw[data-l]').forEach(sw=>{
     const ly=layers[sw.dataset.l]; if(!ly) return;
     ly.visible=!ly.visible;
     sw.classList.toggle('on');
-  });
-});
-
-// Height toggle
-document.querySelectorAll('.vbtn[data-h]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const nh=parseFloat(btn.dataset.h);
-    if(nh===H) return;
-    document.querySelectorAll('.vbtn[data-h]').forEach(b=>b.classList.remove('on'));
-    btn.classList.add('on');
-    H=nh;
-    for(const dep of shellDeps){
-      if(dep.isRoof){
-        dep.mesh.position.y = H + .04;
-      } else if(dep.isCol){
-        const newH = H;
-        dep.mesh.scale.y = newH / dep.origH;
-        dep.mesh.position.y = newH/2;
-      } else {
-        const newH = H - dep.z0;
-        dep.mesh.scale.y = newH / dep.origH;
-        dep.mesh.position.y = dep.z0 + newH/2;
-      }
-    }
-    document.getElementById('hval').textContent = H+'.0 м';
   });
 });
 
